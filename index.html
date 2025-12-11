@@ -1,0 +1,297 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+
+<title>Ôn tập chữ: b, d, đ (Nghe và đoán chữ)</title>
+
+<style>
+@font-face{
+    font-family:"UTM Avo";
+    src:url("fonts/UTM-Avo.ttf");
+}
+
+/* NỀN TƯƠI SÁNG + MỀM */
+body{
+    margin:0;
+    font-family:"UTM Avo";
+    overflow:hidden;
+    background:linear-gradient(135deg,#f6d365,#fda085);
+    user-select:none;
+}
+
+/* HIỆU ỨNG MIST */
+.mist{
+    position:fixed;
+    width:180%;
+    height:180%;
+    top:-40%;
+    left:-40%;
+    background:radial-gradient(circle at 30% 30%, rgba(255,255,255,0.1), transparent 60%),
+               radial-gradient(circle at 70% 70%, rgba(255,255,255,0.08), transparent 60%);
+    animation:mistMove 18s ease-in-out infinite alternate;
+    filter:blur(25px);
+    pointer-events:none;
+}
+@keyframes mistMove{
+    0%{ transform:translate(0,0) scale(1); }
+    100%{ transform:translate(30px,25px) scale(1.05); }
+}
+
+/* NÚT */
+#buttons{
+    position:absolute;
+    right:25px;
+    top:13%;
+    display:flex;
+    flex-direction:column;
+    gap:12px;
+}
+.btn{
+    padding:10px 17px;
+    background:#6c9de6;
+    color:#fff;
+    font-size:19px;
+    border:none;
+    border-radius:14px;
+    cursor:pointer;
+    box-shadow:0 4px 12px rgba(0,0,0,0.25);
+    transition:0.2s;
+}
+.btn:active{ transform:scale(0.92); }
+#btnEnd{ background:#d84242; }
+
+/* GAME ZONE */
+#game-area{
+    width:100%;
+    height:100vh;
+    display:flex;
+    justify-content:center;
+    align-items:flex-end;
+    padding-bottom:300px;
+}
+
+/* THẺ CHỮ + HIỆU ỨNG GLOW */
+.letter-card{
+    width:310px;
+    height:310px;
+    background:white;
+    margin:0 48px;
+    border-radius:28px;
+    font-size:240px;
+    color:#c2185b;
+    font-weight:bold;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    cursor:pointer;
+    box-shadow:
+        0 0 15px rgba(255,255,255,0.9),
+        0 0 40px rgba(255,200,200,0.6);
+    transition:0.25s;
+    position:relative;
+}
+.letter-card:hover{
+    transform:scale(1.05);
+    box-shadow:
+        0 0 20px rgba(255,255,255,1),
+        0 0 50px rgba(255,150,150,0.9);
+}
+
+/* HÌNH */
+.illustration{
+    width:300px;
+    border-radius:24px;
+    border:6px solid white;
+    position:absolute;
+    top:-330px;
+    left:50%;
+    transform:translateX(-50%);
+    display:none;
+}
+
+/* --- PHÁO HOA LỚN (NHIỀU TIA) --- */
+.firework{
+    position:absolute;
+    width:8px;
+    height:8px;
+    background:yellow;
+    border-radius:50%;
+    pointer-events:none;
+    animation:boom 1.2s ease-out forwards;
+}
+@keyframes boom{
+    0%{
+        transform:translate(0,0) scale(1);
+        opacity:1;
+    }
+    100%{
+        transform:translate(var(--dx), var(--dy)) scale(0.1);
+        opacity:0;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<div class="mist"></div>
+
+<!-- BUTTONS -->
+<div id="buttons">
+    <button class="btn" id="btnFull">Full màn hình</button>
+    <button class="btn" id="btnEnd" style="display:none;">Kết thúc</button>
+    <button class="btn" id="btnStart">Bắt đầu</button>
+    <button class="btn" id="btnListen" style="display:none;">Nghe</button>
+    <button class="btn" id="btnNext" style="display:none;">Tiếp tục</button>
+</div>
+
+<!-- GAME -->
+<div id="game-area">
+
+    <div class="letter-card" data-letter="b">
+        b
+        <img class="illustration" id="img-b">
+    </div>
+
+    <div class="letter-card" data-letter="d">
+        d
+        <img class="illustration" id="img-d">
+    </div>
+
+    <div class="letter-card" data-letter="đ">
+        đ
+        <img class="illustration" id="img-dd">
+    </div>
+
+</div>
+
+<!-- ÂM THANH -->
+<audio id="snd-b" src="b.mp3"></audio>
+<audio id="snd-d" src="d.mp3"></audio>
+<audio id="snd-dd" src="dd.mp3"></audio>
+<audio id="snd-win" src="win.mp3"></audio>
+<audio id="snd-wrong" src="wrong.mp3"></audio>
+
+<script>
+var currentLetter=null;
+var isChoosing=false;
+var allowReplay=false;
+
+var letters=["b","d","đ"];
+var illustrationPaths={
+    "b":["img/b1.png","img/b2.png","img/b3.png"],
+    "d":["img/d1.png","img/d2.png","img/d3.png"],
+    "đ":["img/dd1.png","img/dd2.png","img/dd3.png"]
+};
+
+/* FULL SCREEN */
+document.getElementById("btnFull").onclick=function(){
+    let el=document.documentElement;
+    if(!document.fullscreenElement){
+        if(el.requestFullscreen) el.requestFullscreen();
+        else if(el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+    }else{
+        if(document.exitFullscreen) document.exitFullscreen();
+        else if(document.webkitExitFullscreen) document.webkitExitFullscreen();
+    }
+};
+
+/* RANDOM */
+function pick(a){ return a[Math.floor(Math.random()*a.length)] }
+
+/* ÂM */
+function playSound(id){
+    let snd=document.getElementById(id);
+    snd.currentTime=0;
+    snd.play();
+}
+
+/* ẨN HÌNH */
+function hideAllIllustrations(){
+    document.querySelectorAll(".illustration").forEach(i=>i.style.display="none");
+}
+
+/* HIỆN HÌNH */
+function showRandomIllustration(letter){
+    let id=(letter==="đ"?"dd":letter);
+    let img=document.getElementById("img-"+id);
+    img.src=pick(illustrationPaths[letter]);
+    img.style.display="block";
+}
+
+/* --- PHÁO HOA LỚN --- */
+function bigFirework(x,y){
+    for(let i=0;i<35;i++){
+        let fw=document.createElement("div");
+        fw.className="firework";
+        let ang=Math.random()*Math.PI*2;
+        let dist=80+Math.random()*130;
+        fw.style.left=x+"px";
+        fw.style.top=y+"px";
+        fw.style.setProperty("--dx", Math.cos(ang)*dist+"px");
+        fw.style.setProperty("--dy", Math.sin(ang)*dist+"px");
+        fw.style.background="hsl("+(Math.random()*360)+",100%,60%)";
+        document.body.appendChild(fw);
+        setTimeout(()=>fw.remove(),1200);
+    }
+}
+
+/* BẮT ĐẦU */
+btnStart.onclick=function(){
+    hideAllIllustrations();
+    btnListen.style.display="block";
+    btnEnd.style.display="block";
+    btnStart.style.display="none";
+};
+
+/* NGHE */
+btnListen.onclick=function(){
+    if(!allowReplay){
+        currentLetter=pick(letters);
+        allowReplay=true;
+    }
+    playSound("snd-"+(currentLetter==="đ"?"dd":currentLetter));
+    isChoosing=true;
+};
+
+/* TIẾP TỤC */
+btnNext.onclick=function(){
+    hideAllIllustrations();
+    btnNext.style.display="none";
+    btnListen.style.display="block";
+    allowReplay=false;
+};
+
+/* KẾT THÚC */
+btnEnd.onclick=function(){ location.reload(); };
+
+/* CLICK CHỌN */
+document.querySelectorAll(".letter-card").forEach(card=>{
+    card.onclick=()=>{
+        if(!isChoosing) return;
+        let chosen=card.dataset.letter;
+
+        if(chosen===currentLetter){
+            playSound("snd-win");
+            isChoosing=false;
+            allowReplay=false;
+            showRandomIllustration(currentLetter);
+
+            let r=card.getBoundingClientRect();
+            bigFirework(r.left+r.width/2, r.top+r.height/2);
+
+            btnListen.style.display="none";
+            btnNext.style.display="block";
+        }
+        else{
+            playSound("snd-wrong");
+        }
+    }
+});
+</script>
+
+</body>
+</html>
